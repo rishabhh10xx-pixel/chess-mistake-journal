@@ -239,3 +239,30 @@ render();
 
 </body>
 </html>
+function analyzePGN() {
+  const pgn = document.getElementById("pgn").value.trim();
+  const result = document.getElementById("pgnResult");
+
+  if (!pgn) {
+    result.innerHTML = "<p>Please paste a PGN first.</p>";
+    return;
+  }
+
+  const moves = pgn
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/\{[^}]*\}/g, "")
+    .replace(/\d+\.(\.\.)?/g, "")
+    .replace(/1-0|0-1|1\/2-1\/2|\*/g, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  result.innerHTML = `
+    <div class="mistake">
+      <h3>Game Loaded ✅</h3>
+      <p><b>Total moves:</b> ${moves.length}</p>
+      <p><b>First moves:</b> ${moves.slice(0, 12).join(" ")}</p>
+      <p>PGN successfully read. Engine analysis will be added next.</p>
+    </div>
+  `;
+}
