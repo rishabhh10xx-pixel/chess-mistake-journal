@@ -235,30 +235,27 @@ function escapeHTML(text){
 }
 
 render();
-</script>
+<p><b>What went wrong:</b><br>
+${escapeHTML(m.reason)}</p>
 
-</body>
-</html>
-function analyzePGN() {
-  const pgn = document.getElementById("pgn").value.trim();
-  const result = document.getElementById("pgnResult");
+<p><b>Lesson:</b><br>
+${escapeHTML(m.lesson)}</p>
 
-  if (!pgn) {
-    result.innerHTML = "<p>Please paste a PGN first.</p>";
-    return;
-  }
+<button class="delete" onclick="removeMistake(${m.id})">
+    Delete
+</button>
 
-  const moves = pgn
-    .replace(/\[[^\]]*\]/g, "")
-    .replace(/\{[^}]*\}/g, "")
-    .replace(/\d+\.(\.\.)?/g, "")
-    .replace(/1-0|0-1|1\/2-1\/2|\*/g, "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+</div>
+`).join("");
+}
 
-  result.innerHTML = `
-    <div class="mistake">
-      <h3>Game Loaded ✅</h3>
-      <p><b>Total moves:</b> ${moves.length}</p>
-      <p><b>First moves:</b> ${moves.slice(0, 12).j
+function escapeHTML(text){
+    return String(text)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+render();
