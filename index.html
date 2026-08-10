@@ -61,7 +61,19 @@ button{
 </header>
 
 <div class="container">
+<div class="card">
+  <h2>♟ PGN Analyzer</h2>
+  <p>Apni Chess.com game ka PGN yahan paste karo.</p>
 
+  <textarea id="pgn"
+    placeholder="Paste your PGN here..."></textarea>
+
+  <button class="add" onclick="analyzePGN()">
+    Analyze Game
+  </button>
+
+  <div id="pgnResult"></div>
+</div>
   <div class="card">
     <div class="stats">
       <div class="stat">
