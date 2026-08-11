@@ -1,197 +1,476 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chess Mistake Journal</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f3f4f6;
-  color:#111827;
-}
-header{
-  background:#111827;
-  color:white;
-  padding:25px 18px;
-}
-h1{margin:0 0 8px}
-.container{
-  max-width:850px;
-  margin:auto;
-  padding:18px;
-}
-.card{
-  background:white;
-  padding:20px;
-  margin-bottom:18px;
-  border-radius:16px;
-  box-shadow:0 3px 12px #0001;
-}
-textarea{
-  width:100%;
-  height:220px;
-  box-sizing:border-box;
-  padding:14px;
-  border:2px solid #ddd;
-  border-radius:12px;
-  font-family:monospace;
-}
-button{
-  border:0;
-  padding:14px 20px;
-  border-radius:10px;
-  font-weight:bold;
-  margin-top:12px;
-  cursor:pointer;
-}
-.analyze{
-  width:100%;
-  background:#2563eb;
-  color:white;
-  font-size:17px;
-}
-.stats{
-  display:flex;
-  gap:10px;
-}
-.stat{
-  flex:1;
-  text-align:center;
-  background:#eef2ff;
-  padding:15px;
-  border-radius:12px;
-}
-.stat b{
-  display:block;
-  font-size:28px;
-}
-.mistake{
-  background:#fff1f2;
-  border-left:5px solid #ef4444;
-  padding:15px;
-  margin:10px 0;
-  border-radius:8px;
-}
-.good{
-  background:#ecfdf5;
-  border-left:5px solid #22c55e;
-  padding:15px;
-  border-radius:8px;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blunder Coach</title>
+  <link rel="stylesheet"
+        href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 { text-align: center; margin-bottom: 8px; color: var(--accent); }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; }
+    .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    #board { width: 100%; max-width: 520px; margin: 0 auto; }
+    textarea {
+      width: 100%; height: 100px; background: #0f172a; color: var(--text);
+      border: 1px solid #334155; border-radius: 8px; padding: 12px; font-family: monospace;
+      resize: vertical;
+    }
+    button {
+      background: var(--accent); color: #0f172a; border: none; padding: 10px 18px;
+      border-radius: 8px; font-weight: 600; cursor: pointer; margin: 4px;
+      transition: transform 0.1s;
+    }
+    button:hover { transform: translateY(-1px); }
+    button.secondary { background: #334155; color: var(--text); }
+    button.danger { background: var(--danger); color: white; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; justify-content: center; }
+    .blunder-list { max-height: 420px; overflow-y: auto; }
+    .blunder-item {
+      background: #0f172a; border-radius: 10px; padding: 12px; margin-bottom: 10px;
+      border-left: 4px solid var(--danger); cursor: pointer;
+    }
+    .blunder-item:hover { background: #1e293b; }
+    .severity-mistake { border-left-color: var(--warn); }
+    .severity-blunder { border-left-color: var(--danger); }
+    .severity-gamechanger { border-left-color: #a855f7; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .badge-mistake { background: #f59e0b33; color: #fbbf24; }
+    .badge-blunder { background: #ef444433; color: #f87171; }
+    .badge-gamechanger { background: #a855f733; color: #c084fc; }
+    .explanation { margin-top: 8px; font-size: 14px; line-height: 1.5; color: #cbd5e1; }
+    .weakness { margin-top: 16px; }
+    .progress-bar {
+      height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-top: 4px;
+    }
+    .progress-fill { height: 100%; background: var(--accent); }
+    .lang-toggle { text-align: right; margin-bottom: 8px; }
+    .retry-box { background: #0f172a; padding: 16px; border-radius: 12px; margin-top: 16px; display: none; }
+    .status { text-align: center; color: #94a3b8; margin: 8px 0; font-size: 14px; }
+  </style>
 </head>
-
 <body>
+  <h1>♟ Blunder Coach</h1>
+  <p class="subtitle">Automatic blunder detection • Severity • Explanations • Training</p>
 
-<header>
-<h1>♟ Chess Mistake Journal</h1>
-<p>Track mistakes. Find patterns. Improve your chess.</p>
-</header>
+  <div class="container">
+    <!-- LEFT: Board + Import -->
+    <div class="card">
+      <div class="lang-toggle">
+        <button class="secondary" onclick="toggleLang()">🌐 English / Hinglish</button>
+      </div>
+      <div id="board"></div>
+      <div class="status" id="status">Paste a PGN and click Analyze</div>
+      <div class="controls">
+        <button onclick="analyzeGame()">🔍 Analyze Game</button>
+        <button class="secondary" onclick="showWorst3()">🔥 3 Worst Mistakes</button>
+        <button class="secondary" onclick="startRetry()">🎯 Retry Mode</button>
+        <button class="secondary" onclick="resetBoard()">↺ Reset</button>
+      </div>
 
-<div class="container">
+      <h3 style="margin:16px 0 8px">PGN Import</h3>
+      <textarea id="pgn" placeholder="Paste Chess.com / Lichess PGN here..."></textarea>
+      <div class="controls">
+        <button onclick="loadSample()">Load Sample Game</button>
+      </div>
 
-<div class="card">
-<h2>PGN Analyzer</h2>
+      <!-- Retry Mode -->
+      <div class="retry-box" id="retryBox">
+        <h3>🎯 Retry Mode – Find the best move</h3>
+        <p id="retryPrompt" style="margin:8px 0"></p>
+        <p style="font-size:13px;color:#94a3b8">Make a move on the board. Engine will tell you if it’s correct.</p>
+        <button onclick="checkRetryMove()">Check My Move</button>
+        <button class="secondary" onclick="showAnswer()">Show Answer</button>
+        <button class="danger" onclick="closeRetry()">Close</button>
+      </div>
+    </div>
 
-<p>Chess.com ka PGN yahan paste karo:</p>
+    <!-- RIGHT: Analysis Panel -->
+    <div class="card">
+      <h2>Analysis</h2>
+      <div id="summary" style="margin:12px 0;font-size:15px"></div>
+      <div class="blunder-list" id="blunderList"></div>
 
-<textarea id="pgn"
-placeholder='[Event "Chess.com"]
-[White "Rishabh11x"]
+      <div class="weakness">
+        <h3>Personal Weakness Tracker</h3>
+        <div id="weaknessChart"></div>
+        <button class="secondary" style="margin-top:12px" onclick="resetWeaknesses()">Clear History</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish.js"></script>
+
+  <script>
+    // ====================== STATE ======================
+    let game = new Chess();
+    let board = null;
+    let stockfish = null;
+    let analysisResults = [];
+    let currentLang = 'en'; // 'en' | 'hi'
+    let retryMode = false;
+    let retryBestMove = null;
+    let weaknesses = JSON.parse(localStorage.getItem('blunderCoachWeaknesses') || '{}');
+
+    // ====================== BOARD ======================
+    board = Chessboard('board', {
+      position: 'start',
+      draggable: true,
+      onDrop: onDrop,
+      pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+    });
+
+    function onDrop(source, target) {
+      const move = game.move({ from: source, to: target, promotion: 'q' });
+      if (move === null) return 'snapback';
+      board.position(game.fen());
+      updateStatus();
+    }
+
+    function updateStatus() {
+      let status = '';
+      if (game.in_checkmate()) status = 'Checkmate!';
+      else if (game.in_draw()) status = 'Draw';
+      else status = (game.turn() === 'w' ? 'White' : 'Black') + ' to move';
+      document.getElementById('status').textContent = status;
+    }
+
+    // ====================== STOCKFISH ======================
+    function initStockfish() {
+      if (stockfish) return;
+      stockfish = typeof STOCKFISH === 'function' ? STOCKFISH() : new Worker('https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish.js');
+      stockfish.onmessage = function(e) {
+        // handled per-promise
+      };
+    }
+
+    function analyzePosition(fen, depth = 14) {
+      return new Promise((resolve) => {
+        initStockfish();
+        let bestMove = null;
+        let score = null;
+        const listener = (e) => {
+          const line = e.data;
+          if (line.startsWith('bestmove')) {
+            bestMove = line.split(' ')[1];
+            stockfish.removeEventListener('message', listener);
+            resolve({ bestMove, score: score || 0, fen });
+          }
+          if (line.includes('score cp')) {
+            const match = line.match(/score cp (-?\d+)/);
+            if (match) score = parseInt(match[1]);
+          }
+          if (line.includes('score mate')) {
+            const match = line.match(/score mate (-?\d+)/);
+            if (match) score = match[1] > 0 ? 10000 : -10000;
+          }
+        };
+        stockfish.addEventListener('message', listener);
+        stockfish.postMessage('ucinewgame');
+        stockfish.postMessage('position fen ' + fen);
+        stockfish.postMessage('go depth ' + depth);
+      });
+    }
+
+    // ====================== BLUNDER DETECTION ======================
+    async function analyzeGame() {
+      const pgn = document.getElementById('pgn').value.trim();
+      if (!pgn) {
+        alert('Please paste a PGN first');
+        return;
+      }
+
+      game = new Chess();
+      const success = game.load_pgn(pgn);
+      if (!success) {
+        alert('Invalid PGN');
+        return;
+      }
+
+      document.getElementById('status').textContent = 'Analyzing... this may take 20-40 seconds';
+      document.getElementById('blunderList').innerHTML = '<p>Running engine...</p>';
+
+      const history = game.history({ verbose: true });
+      game.reset();
+      analysisResults = [];
+      let previousScore = 0;
+
+      for (let i = 0; i < history.length; i++) {
+        const move = history[i];
+        const fenBefore = game.fen();
+        const isWhite = game.turn() === 'w';
+
+        // Analyze position before the move
+        const before = await analyzePosition(fenBefore, 12);
+        const scoreBefore = isWhite ? before.score : -before.score;
+
+        game.move(move);
+        const fenAfter = game.fen();
+        const after = await analyzePosition(fenAfter, 12);
+        const scoreAfter = isWhite ? after.score : -after.score;
+
+        // Centipawn loss from the player's perspective
+        const loss = scoreBefore - scoreAfter;
+
+        if (loss > 80) { // threshold for "mistake"
+          const severity = loss > 300 ? 'gamechanger' : loss > 150 ? 'blunder' : 'mistake';
+          const category = detectCategory(fenBefore, move, before.bestMove);
+
+          analysisResults.push({
+            moveNumber: Math.floor(i / 2) + 1,
+            color: isWhite ? 'White' : 'Black',
+            played: move.san,
+            best: before.bestMove,
+            loss: Math.round(loss),
+            severity,
+            category,
+            fenBefore,
+            fenAfter,
+            scoreBefore,
+            scoreAfter
+          });
+        }
+      }
+
+      renderBlunders();
+      updateWeaknesses();
+      document.getElementById('status').textContent = `Analysis complete – ${analysisResults.length} significant mistakes found`;
+    }
+
+    function detectCategory(fen, playedMove, bestMove) {
+      // Simple heuristics – can be expanded with more tactics detection
+      const temp = new Chess(fen);
+      const moves = temp.moves({ verbose: true });
+      const played = moves.find(m => m.from + m.to === playedMove.from + playedMove.to);
+
+      if (!played) return 'Unknown';
+
+      // Hanging piece
+      if (played.captured && !isProtected(temp, played.to)) return 'Hanging Pieces';
+
+      // King safety (castling rights lost or king moved into open)
+      if (played.piece === 'k' && Math.abs(played.from.charCodeAt(0) - played.to.charCodeAt(0)) > 1) {
+        return 'King Safety';
+      }
+
+      // Bad exchange (simplified)
+      if (played.captured) {
+        const values = { p:1, n:3, b:3, r:5, q:9 };
+        const gain = values[played.captured] || 0;
+        // rough check
+        return 'Bad Exchanges';
+      }
+
+      // Opening / Endgame
+      const pieceCount = fen.split(' ')[0].replace(/[^pnbrqkPNBRQK]/g,'').length;
+      if (pieceCount > 28) return 'Opening Mistakes';
+      if (pieceCount < 12) return 'Endgame Errors';
+
+      return 'Missed Tactics';
+    }
+
+    function isProtected(chess, square) {
+      // very simplified
+      return false;
+    }
+
+    // ====================== RENDER ======================
+    function renderBlunders() {
+      const list = document.getElementById('blunderList');
+      const summary = document.getElementById('summary');
+
+      if (analysisResults.length === 0) {
+        list.innerHTML = '<p>No major blunders found. Nice game!</p>';
+        summary.innerHTML = '';
+        return;
+      }
+
+      const totalLoss = analysisResults.reduce((s, b) => s + b.loss, 0);
+      summary.innerHTML = `
+        <strong>${analysisResults.length}</strong> significant mistakes<br>
+        Total centipawn loss: <strong>${totalLoss}</strong>
+      `;
+
+      list.innerHTML = analysisResults.map((b, idx) => `
+        <div class="blunder-item severity-\( {b.severity}" onclick="showPosition( \){idx})">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${b.moveNumber}. ${b.color}: ${b.played}</strong>
+            <span class="badge badge-\( {b.severity}"> \){b.severity.toUpperCase()}</span>
+          </div>
+          <div style="font-size:13px;margin-top:4px;color:#94a3b8">
+            Loss: ${b.loss} cp • Category: ${b.category}
+          </div>
+          <div class="explanation">${explain(b)}</div>
+        </div>
+      `).join('');
+    }
+
+    function explain(b) {
+      if (currentLang === 'hi') {
+        return `
+          Aapne <strong>\( {b.played}</strong> khela, lekin best move <strong> \){b.best}</strong> tha.<br>
+          Isse position ${b.loss} centipawn kharab ho gayi.<br>
+          Category: ${b.category}. Try again in Retry Mode!
+        `;
+      }
+      return `
+        You played <strong>\( {b.played}</strong>. Best was <strong> \){b.best}</strong>.<br>
+        This cost \~\( {b.loss} centipawns. Category: <em> \){b.category}</em>.<br>
+        Opponent was probably planning something on the other side of the board.
+      `;
+    }
+
+    function showPosition(idx) {
+      const b = analysisResults[idx];
+      game.load(b.fenBefore);
+      board.position(b.fenBefore);
+      document.getElementById('status').textContent =
+        `Move ${b.moveNumber} – You played ${b.played}. Best: ${b.best}`;
+    }
+
+    function showWorst3() {
+      const sorted = [...analysisResults].sort((a,b) => b.loss - a.loss).slice(0,3);
+      if (sorted.length === 0) return alert('Analyze a game first');
+      document.getElementById('blunderList').innerHTML = `
+        <h3>🔥 3 Biggest Mistakes</h3>
+        ${sorted.map((b,i) => `
+          <div class="blunder-item severity-\( {b.severity}" onclick="showPosition( \){analysisResults.indexOf(b)})">
+            <strong>#${i+1} – ${b.loss} cp loss</strong><br>
+            ${b.moveNumber}. ${b.played} → best ${b.best}<br>
+            <span class="badge badge-\( {b.severity}"> \){b.severity}</span>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    // ====================== RETRY MODE ======================
+    function startRetry() {
+      if (analysisResults.length === 0) return alert('Analyze a game first');
+      const b = analysisResults[Math.floor(Math.random() * analysisResults.length)];
+      retryMode = true;
+      retryBestMove = b.best;
+      game.load(b.fenBefore);
+      board.position(b.fenBefore);
+      document.getElementById('retryBox').style.display = 'block';
+      document.getElementById('retryPrompt').innerHTML =
+        `Position before move \( {b.moveNumber}. Find a better move than <strong> \){b.played}</strong>`;
+    }
+
+    function checkRetryMove() {
+      const last = game.history({ verbose: true }).slice(-1)[0];
+      if (!last) return alert('Make a move first');
+      const played = last.from + last.to + (last.promotion || '');
+      if (played === retryBestMove || last.san === retryBestMove) {
+        alert('✅ Correct! Great job.');
+      } else {
+        alert('❌ Not the best. Try again or show answer.');
+        game.undo();
+        board.position(game.fen());
+      }
+    }
+
+    function showAnswer() {
+      alert('Best move was: ' + retryBestMove);
+    }
+
+    function closeRetry() {
+      document.getElementById('retryBox').style.display = 'none';
+      retryMode = false;
+    }
+
+    // ====================== WEAKNESS TRACKER ======================
+    function updateWeaknesses() {
+      analysisResults.forEach(b => {
+        weaknesses[b.category] = (weaknesses[b.category] || 0) + 1;
+      });
+      localStorage.setItem('blunderCoachWeaknesses', JSON.stringify(weaknesses));
+      renderWeaknesses();
+    }
+
+    function renderWeaknesses() {
+      const el = document.getElementById('weaknessChart');
+      const entries = Object.entries(weaknesses).sort((a,b) => b[1] - a[1]);
+      if (entries.length === 0) {
+        el.innerHTML = '<p style="color:#94a3b8">Play & analyze games to build your profile</p>';
+        return;
+      }
+      const max = Math.max(...entries.map(e => e[1]));
+      el.innerHTML = entries.map(([cat, count]) => `
+        <div style="margin:8px 0">
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span>\( {cat}</span><span> \){count}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${(count/max)*100}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function resetWeaknesses() {
+      if (confirm('Clear all weakness data?')) {
+        weaknesses = {};
+        localStorage.removeItem('blunderCoachWeaknesses');
+        renderWeaknesses();
+      }
+    }
+
+    // ====================== HELPERS ======================
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'hi' : 'en';
+      renderBlunders();
+    }
+
+    function resetBoard() {
+      game.reset();
+      board.start();
+      updateStatus();
+    }
+
+    function loadSample() {
+      document.getElementById('pgn').value = `
+[Event "Casual Game"]
+[Site "Blunder Coach"]
+[Date "2024.01.01"]
+[White "Player"]
 [Black "Opponent"]
+[Result "0-1"]
 
-1. e4 e5 2. Nf3 Nc6 3. Bb5 a6'></textarea>
+1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7 11. c4 c6 12. cxb5 axb5 13. Nc3 Bb7 14. Bg5 b4 15. Nb1 h6 16. Bh4 c5 17. dxe5 Nxe4 18. Bxe7 Qxe7 19. exd6 Qf6 20. Nbd2 Nxd6 21. Nc4 Nxc4 22. Bxc4 Nb6 23. Ne5 Rae8 24. Bxf7+ Rxf7 25. Nxf7 Rxe1+ 26. Qxe1 Kxf7 27. Qe3 Qg5 28. Qxg5 hxg5 29. b3 Ke6 30. a3 Kd6 31. axb4 cxb4 32. Ra5 Nd5 33. f3 Bc8 34. Kf2 Bf5 35. Ra7 g6 36. Ra6+ Kc5 37. Ke1 Nf4 38. g3 Nxh3 39. Kd2 Kb5 40. Rd6 Kc5 41. Ra6 Nf2 42. g4 Bd3 43. Re6 0-1
+      `.trim();
+    }
 
-<button class="analyze" onclick="analyzePGN()">
-🔍 Analyze Game
-</button>
-
-<p id="status"></p>
-</div>
-
-<div class="card">
-<div class="stats">
-<div class="stat">
-<b id="mistakes">0</b>
-Mistakes
-</div>
-
-<div class="stat">
-<b id="blunders">0</b>
-Blunders
-</div>
-
-<div class="stat">
-<b id="moves">0</b>
-Moves
-</div>
-</div>
-</div>
-
-<div class="card">
-<h2>📊 Result</h2>
-<div id="result">
-PGN paste karke Analyze Game dabao.
-</div>
-</div>
-
-</div>
-
-<script>
-
-function escapeHTML(text){
-return String(text)
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#039;");
-}
-
-function getHeaders(pgn){
-
-let headers={};
-let regex=/([A-Za-z0-9_]+)\s+"([^"]*)"/g;
-let match;
-
-while((match=regex.exec(pgn))!==null){
-headers[match[1]]=match[2];
-}
-
-return headers;
-}
-
-function analyzePGN(){
-
-let pgn=document.getElementById("pgn").value.trim();
-
-let result=document.getElementById("result");
-let status=document.getElementById("status");
-
-if(!pgn){
-
-result.innerHTML=
-"<div class='mistake'>❌ Pehle PGN paste karo.</div>";
-
-return;
-}
-
-let chess=new Chess();
-
-let loaded=chess.load_pgn(pgn,{sloppy:true});
-
-if(!loaded){
-
-result.innerHTML=
-"<div class='mistake'>❌ PGN read nahi ho raha. Chess.com se original PGN copy karo.</div>";
-
-return;
-}
-
-let headers=getHeaders(pgn);
-let history=chess.history({verbose:true});
+    // Init
+    renderWeaknesses();
+    updateStatus();
+  </script>
+</body>
+</html>
